@@ -175,3 +175,17 @@ meanseries = meanseries.replace(0.0, np.NaN, regex=True)
 meanseries = meanseries.interpolate(method='pchip')
 specificpriceseries = RemoveNaNFront(meanseries)
 
+
+
+mandiarrivalexpected = mandiarrivalseries.rolling(window=30).mean()
+mandiarrivalexpected = mandiarrivalexpected.groupby([mandiarrivalseries.index.month, mandiarrivalseries.index.day]).mean()
+idx = pd.date_range(START, END)
+data = [ (mandiarrivalexpected[index.month][index.day]) for index in idx]
+expectedarrivalseries = pd.Series(data, index=idx)
+
+'''
+from averagemandi import mandiarrivalexpected
+import matplotlib.pyplot as plt
+mandiarrivalexpected.plot()
+plt.show()
+'''
