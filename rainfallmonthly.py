@@ -9,6 +9,12 @@ import math
 START = CONSTANTS['STARTDATE']
 END = CONSTANTS['ENDDATE']
 
+def print_full(x):
+    pd.set_option('display.max_rows', len(x))
+    print(x)
+    pd.reset_option('display.max_rows')
+
+
 def monthlyrainfallseries():
 	rainfall = pd.read_csv('data/original/mh_rainfall.csv')
 	rainfall[3] = rainfall.apply(lambda row: datetime.strptime(row[2], '%m-%Y'), axis=1)
@@ -21,7 +27,7 @@ def monthlyrainfallseries():
 	return rainfallseries
 
 rainfallmonthly = monthlyrainfallseries()
-
+# print_full(rainfallmonthly)
 
 def giveavgrainfallmonthly():
 	rainfall = pd.read_csv('data/original/mh_rainfall_all.csv')
