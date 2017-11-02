@@ -42,3 +42,10 @@ def giveavgrainfallmonthly():
 	return rainfallseries
 
 avgrainfallmonthly = giveavgrainfallmonthly()
+
+
+
+avgrainfallexpected = avgrainfallmonthly.groupby([avgrainfallmonthly.index.month, avgrainfallmonthly.index.day]).mean()
+idx = pd.date_range(START, END)
+data = [ (avgrainfallexpected[index.month][index.day]) for index in idx]
+avgrainfallexpected = pd.Series(data, index=idx)

@@ -154,3 +154,10 @@ meanseries = centreDF.mean(axis=1)
 meanseries = meanseries.replace(0.0, np.NaN, regex=True)
 meanseries = meanseries.interpolate(method='pchip')
 specificretailprice = RemoveNaNFront(meanseries)
+
+
+retailpriceexpected = retailpriceseries.rolling(window=30,center=True).mean()
+retailpriceexpected = retailpriceexpected.groupby([retailpriceexpected.index.month, retailpriceexpected.index.day]).mean()
+idx = pd.date_range(START, END)
+data = [ (retailpriceexpected[index.month][index.day]) for index in idx]
+expectedretailprice = pd.Series(data, index=idx)
