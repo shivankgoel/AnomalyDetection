@@ -25,3 +25,12 @@ I've not added expected behavior of the mandi prices, we need to understand thos
 - Additionally, the comparison between the source mandi price movement, terminal mandi price movement, and retail price movement, will be important to understand under different scenarios of delayed/inadequate/timely/adequate arrivals. And with more details such as the example of price propagation from Karnataka to Maharashtra, because of rainfall problems in Karnataka. 
 
 Aaditeshwar
+
+
+How far the data can be used?
+what are the temporal and spatial limits or granularity 
+Try to quantify the rules using simple terms
+ex : (Retail - Mandi)/Mandi
+
+
+
