@@ -9,7 +9,7 @@ import math
 
 font = {'family' : 'normal',
         #'weight' : 'bold',
-        'size'   : 12}
+        'size'   : 14}
 
 matplotlib.rc('font', **font)
 
@@ -74,27 +74,34 @@ def RemoveNaNFront(series):
       series[i] = series[index]
   return series
 
+'''
+def Normalize(series):
+  series = (series - series.mean())/series.std()
+'''
+
 from averagemandi import mandiarrivalseries
 from averagemandi import specificarrivalseries
 from averagemandi import expectedarrivalseries
+from averagemandi import expectedspecificarrivalseries
 mean_arr_series = mandiarrivalseries
-mean_arr_series = mean_arr_series.rolling(window=30).mean()
+mean_arr_series = mean_arr_series.rolling(window=30,center=True).mean()
 mean_arr_series = RemoveNaNFront(mean_arr_series)
 #mean_arr_series = (mean_arr_series - mean_arr_series.mean())/mean_arr_series.std()
 
-specificarrivalseries = specificarrivalseries.rolling(window=30).mean()
+specificarrivalseries = specificarrivalseries.rolling(window=30,center=True).mean()
 specificarrivalseries = RemoveNaNFront(specificarrivalseries)
 
 from averagemandi import mandipriceseries
 from averagemandi import specificpriceseries
+from averagemandi import expectedmandiprice
 mean_mprice_series = mandipriceseries
 
 
 from averageretail import retailpriceseries
 from averageretail import specificretailprice
-specificretailprice = specificretailprice.rolling(window=7).mean()
+specificretailprice = specificretailprice.rolling(window=7,center=True).mean()
 mean_retail_series = retailpriceseries
-mean_retail_series = mean_retail_series.rolling(window=7).mean()
+mean_retail_series = mean_retail_series.rolling(window=7,center=True).mean()
 #mean_retail_series = (mean_retail_series - mean_retail_series.mean())/mean_retail_series.std()
 
 
@@ -111,6 +118,7 @@ exportseries = (exportseries - exportseries.mean())/exportseries.std()
 
 from rainfallmonthly import rainfallmonthly
 from rainfallmonthly import avgrainfallmonthly
+from rainfallmonthly import avgrainfallexpected
 rainfallseries = rainfallmonthly
 #rainfallseries = (rainfallseries - rainfallseries.mean())/rainfallseries.std() 
 
@@ -119,34 +127,73 @@ from fuelprice import fuelpricemumbai
 
 
 #difference_series = (mean_retail_series - mean_mprice_series)
-#ifference_series = difference_series.rolling(window = 7).mean()
+#ifference_series = difference_series.rolling(window = 7,center=True).mean()
 #plot_series(difference_series,'Difference Retail Mandi Mean Price',6)
 
 #ratio_series = (mean_retail_series/mean_mprice_series)
-#ratio_series = ratio_series.rolling(window = 7).mean()
+#ratio_series = ratio_series.rolling(window = 7,center=True).mean()
 #plot_series(ratio_series,'Ratio Retail Mandi Mean Price',6)
 
 
-#plt.title('Ratio Series')
+#plt.title('Arrival')
 
+import numpy as np
+
+
+#gapseries = retailpriceseries - mandipriceseries
+gapseries = (retailpriceseries*1.0/mandipriceseries)
+coefficients, residuals, _, _, _ = np.polyfit(range(len(gapseries.index)),gapseries,1,full=True)
+mse = residuals[0]/(len(gapseries.index))
+nrmse = np.sqrt(mse)/(gapseries.max() - gapseries.min())
+trendline = pd.Series(([coefficients[0]*x + coefficients[1] for x in range(len(gapseries))]),index=gapseries.index)
+print('Slope ' + str(coefficients[0]))
+print('NRMSE: ' + str(nrmse))
+
+#plot_series(gapseries,'Retail - Mandi Price',5)
+#plot_series(ratio_series,'Retail/Mandi Price',6)
 
 fig, ax1 = plt.subplots()
 ax1.set_xlabel('Time')
-ax1.set_ylabel('Mean Price per Quintal')
-plot_series_axis(mean_retail_series,'Mean Retail Price',3,ax1)
-plot_series_axis(mean_mprice_series,'Mean Mandi Price',5,ax1)
-ax2 = ax1.twinx()
-ax2.set_ylabel('Mean Arrival in Tonnes')
-plot_series_axis(mean_arr_series,'Mean Arrival Series',4,ax2)
-plot_series_axis(expectedarrivalseries,'General Arrival Trend',6,ax2)
-fig.tight_layout()
+ax1.set_ylabel('Retail - Mandi Price')
+#ax2 = ax1.twinx()
+#ax2.set_ylabel('Retail / Mandi Price')
+plot_series_axis(gapseries,'Retail / Mandi Price',5,ax1)
+plot_series_axis(trendline,'Trendline',3,ax1)
+#plot_series_axis(ratio_series,'Retail / Mandi Price',3,ax2)
+#plot_series_axis(mandipriceseries ,'Mandi Price',6,ax2)
+#plot_series_axis(expectedarrivalseries,'Expected Arrival ',2,ax1)
+#plot_series_axis(expectedspecificarrivalseries,'Expected Delhi Arrival ',7,ax1)
+#plot_series_axis(specificarrivalseries,'Delhi Arrival ',8,ax1)
+
+#ma = expectedmandiprice.rolling(30,center=True).mean()
+#mstd = expectedmandiprice.rolling(30,center=True).std()
+#ax2.fill_between(mstd.index, ma-2*mstd, ma+2*mstd, color=colors[4], alpha=0.1)
+
+
+#ma = expectedarrivalseries.rolling(30,center=True).mean()
+#mstd = expectedarrivalseries.rolling(30,center=True).std()
+#ax1.fill_between(mstd.index, ma-2*mstd, ma+2*mstd, color=colors[2], alpha=0.1)
+
+# fig.tight_layout()
 ax1.legend(loc = (0.05,0.9), frameon = False)
-ax2.legend(loc = (0.05,0.75), frameon = False)
+#ax2.legend(loc = (0.05,0.80), frameon = False)
+'''
 
+# mean_retail_series.to_csv('mean_retail_price.csv', header=None, encoding='utf-8')
+# mean_mprice_series.to_csv('mean_mandi_price.csv', header=None, encoding='utf-8')
+# mean_arr_series.to_csv('mean_arrival.csv', header=None, encoding='utf-8')
+# expectedarrivalseries.to_csv('expected_arrival.csv', header=None, encoding='utf-8')
 
-#plt.ylabel('Mumbai Pimpalgaon Series')
+#plot_series(mean_arr_series,'Mean Arrival Series',4)
+#expectedarrivalseries = (expectedarrivalseries - expectedarrivalseries.mean())/expectedarrivalseries.std()
+#plot_series(expectedarrivalseries,'Expected Arrival Trend',6)
+
+#plt.xlabel('Time')
+#plt.ylabel('Arrival in Tonnes')
 #plot_series(specificretailprice,'Mean Retail Price',3)
 #plot_series(specificpriceseries,'Mean Mandi Price',5)
+#from averagemandi import expectedspecificarrivalseries
+#specificarrivalseries = (expectedspecificarrivalseries - expectedspecificarrivalseries.mean())/expectedspecificarrivalseries.std()
 #plot_series(specificarrivalseries,'Mean Arrival Series',4)
 
 
@@ -155,13 +202,25 @@ ax2.legend(loc = (0.05,0.75), frameon = False)
 #plot_series(rainfallseries,'Rainfall',5)
 
 #plt.show()
-# plot_year_series_avg(rainfallseries,'Average Yearly',1)
-# plot_series_year(rainfallseries,'Rainfall',2)
+#plot_year_series_avg(rainfallseries,'Average Yearly',1)
+#plot_series_year(rainfallseries,'Rainfall',2)
+
+#plot_series(rainfallseries,'Rainfall',2)
+#avgrainfallexpected = (avgrainfallexpected - avgrainfallexpected.mean())/avgrainfallexpected.std()
+#plot_series(avgrainfallexpected,'Average Yearly Expected',1)
+#ma = avgrainfallexpected.rolling(14,center=True).mean()
+#mstd = avgrainfallexpected.rolling(14,center=True).std()
+
+#plt.fill_between(mstd.index, ma-2*mstd, ma+2*mstd, color='b', alpha=0.2)
 
 #plot_series(mean_rain_series,'Rainfall',4)
-#plot_series(specificarrivalseries,'Pimpalgaon Arrival',5)
+gapseries = retailpriceseries - mandipriceseries
+ratio_series = (retailpriceseries*1.0/mandipriceseries)
+plot_series(gapseries,'Retail - Mandi Price',5)
+plot_series(ratio_series,'Retail / Mandi Price',6)
+'''
 #plot_series(fuelpricemumbai,'Fuel Price Mumbai',6)
 #plot_series(specificretailprice,'Retail Price Mumbai',6)
 #plot_series(exportseries,'Export',6)
-# plt.legend(loc='best')
+#plt.legend(loc='best')
 plt.show()

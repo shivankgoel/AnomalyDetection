@@ -125,7 +125,7 @@ mandipriceseries = RemoveNaNFront(meanseries)
 For PimpalGaon
 '''
 
-imagenames = ['Maharashtra_MUMBAI_Pimpalgaon.png']
+imagenames = ['Delhi_DELHI_Azadpur.png']
 
 
 mandiseries = []
@@ -177,11 +177,25 @@ specificpriceseries = RemoveNaNFront(meanseries)
 
 
 
-mandiarrivalexpected = mandiarrivalseries.rolling(window=30).mean()
+mandiarrivalexpected = mandiarrivalseries.rolling(window=30,center=True).mean()
 mandiarrivalexpected = mandiarrivalexpected.groupby([mandiarrivalseries.index.month, mandiarrivalseries.index.day]).mean()
 idx = pd.date_range(START, END)
 data = [ (mandiarrivalexpected[index.month][index.day]) for index in idx]
 expectedarrivalseries = pd.Series(data, index=idx)
+
+mandipriceexpected = mandipriceseries.rolling(window=30,center=True).mean()
+mandipriceexpected = mandipriceexpected.groupby([mandipriceexpected.index.month, mandipriceexpected.index.day]).mean()
+idx = pd.date_range(START, END)
+data = [ (mandipriceexpected[index.month][index.day]) for index in idx]
+expectedmandiprice = pd.Series(data, index=idx)
+
+
+mandiarrivalexpected = specificarrivalseries.rolling(window=30,center=True).mean()
+mandiarrivalexpected = mandiarrivalexpected.groupby([mandiarrivalseries.index.month, mandiarrivalseries.index.day]).mean()
+idx = pd.date_range(START, END)
+data = [ (mandiarrivalexpected[index.month][index.day]) for index in idx]
+expectedspecificarrivalseries = pd.Series(data, index=idx)
+
 
 '''
 from averagemandi import mandiarrivalexpected
