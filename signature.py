@@ -38,20 +38,22 @@ def Normalise(arr):
   am = arr.min()
   aM = arr.max()
   arr -= m
-  #arr /= (aM - am)
-  arr /= arr.std()
+  arr /= (aM - am)
+  #arr /= arr.std()
   return arr
 
 def plotIndividualAnomaly(idx, centre):
   s,e = givePeriod(anomalies, idx)
   a = Normalise(np.array(retailP[centre][s:e].tolist()))
-  plt.plot(a)
+  plt.plot(a, linewidth=2.0)
   plt.show()
 
 def plotClassAvg(clss, lb, cl , series):
   '''
   This function will help you to plot the function
   '''
+  series = Normalise(series)
+  series = series.rolling(window=30,center=True).mean()
   avg = np.zeros(shape=(43,))
   count = 0
   for i in range(0, len(anomalies)):
@@ -62,43 +64,46 @@ def plotClassAvg(clss, lb, cl , series):
       a = Normalise(np.array(series[s:e].tolist()))
       avg += a
   avg /= count
-  plt.plot(avg, color=cl, label=lb)
+  plt.plot(avg, color=cl, label=lb, linewidth=2.0)
 
 from averagemandi import mandipriceseries
+from averageretail import retailpriceserieswhiten
 from averageretail import retailpriceseries
 from averagemandi import mandiarrivalseries
 
 
-retailpriceseries = retailpriceseries.rolling(window=7,center=True).mean()
-mandipriceseries = mandipriceseries.rolling(window=7,center=True).mean()
-mandiarrivalseries = mandiarrivalseries.rolling(window=7,center=True).mean()
+# retailpriceseries = retailpriceseries.rolling(window=3,center=True).mean()
+# mandipriceseries = mandipriceseries.rolling(window=7,center=True).mean()
+# mandiarrivalseries = mandiarrivalseries.rolling(window=7,center=True).mean()
 
-plt.title('Retail Price Signatures')
-plotClassAvg('Weather' , 'Weather', colors[2],retailpriceseries)
-plotClassAvg('Transport' , 'Tranport', colors[3],retailpriceseries)
-plotClassAvg('Hoarding' , 'Hoarding', colors[4],retailpriceseries)
-plotClassAvg('Fuel' , 'Fuel', colors[5],retailpriceseries)
-plotClassAvg('Inflation' , 'Inflation', colors[6],retailpriceseries)
+plt.title('Transport Strike Signature')
+# plotClassAvg('Weather' , '', colors[3],retailpriceserieswhiten)
+plotClassAvg('Transport' , '', colors[3],retailpriceserieswhiten)
+# plotClassAvg('Hoarding' , '', colors[3],retailpriceserieswhiten)
+#plotClassAvg('Fuel' , '', colors[3],retailpriceseries)
+# plotClassAvg('Inflation' , '', colors[3],retailpriceserieswhiten)
 plt.legend()
 plt.show()
 
-plt.title('Mandi Price Signatures')
-plotClassAvg('Weather' , 'Weather', colors[2],mandipriceseries)
-plotClassAvg('Transport' , 'Tranport', colors[3],mandipriceseries)
-plotClassAvg('Hoarding' , 'Hoarding', colors[4],mandipriceseries)
-plotClassAvg('Fuel' , 'Fuel', colors[5],mandipriceseries)
-plotClassAvg('Inflation' , 'Inflation', colors[6],mandipriceseries)
-plt.legend()
-plt.show()
 
-plt.title('Mandi Arrival Signatures')
-plotClassAvg('Weather' , 'Weather', colors[2],mandiarrivalseries)
-plotClassAvg('Transport' , 'Tranport', colors[3],mandiarrivalseries)
-plotClassAvg('Hoarding' , 'Hoarding', colors[4],mandiarrivalseries)
-plotClassAvg('Fuel' , 'Fuel', colors[5],mandiarrivalseries)
-plotClassAvg('Inflation' , 'Inflation', colors[6],mandiarrivalseries)
-plt.legend()
-plt.show()
+# plt.title('Mandi Price Signatures')
+# plotClassAvg('Weather' , 'Weather', colors[2],mandipriceseries)
+# plotClassAvg('Transport' , 'Tranport', colors[3],mandipriceseries)
+# plotClassAvg('Hoarding' , 'Hoarding', colors[4],mandipriceseries)
+# plotClassAvg('Fuel' , 'Fuel', colors[5],mandipriceseries)
+# plotClassAvg('Inflation' , 'Inflation', colors[6],mandipriceseries)
+# plt.legend()
+# plt.show()
+
+# plt.title('Mandi Arrival Signatures')
+# plotClassAvg('Weather' , 'Weather', colors[2],mandiarrivalseries)
+# plotClassAvg('Transport' , 'Tranport', colors[3],mandiarrivalseries)
+# plotClassAvg('Hoarding' , 'Hoarding', colors[4],mandiarrivalseries)
+# plotClassAvg('Fuel' , 'Fuel', colors[5],mandiarrivalseries)
+# plotClassAvg('Inflation' , 'Inflation', colors[6],mandiarrivalseries)
+# plt.legend()
+# plt.show()
+
 
 '''
 def RMSError(clss,centre_idx):

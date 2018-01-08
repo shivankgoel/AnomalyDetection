@@ -24,6 +24,7 @@ def monthlyrainfallseries():
 	rainfallseries = rainfall['MADHYA MAHARASHTRA']
 	rainfallseries = rainfallseries.replace(0.0, np.NaN, regex=True)
 	rainfallseries = rainfallseries.interpolate(method='linear',limit_direction='both')
+	rainfallseries.fillna(0,inplace=True)
 	return rainfallseries
 
 rainfallmonthly = monthlyrainfallseries()
@@ -50,8 +51,12 @@ def giveavgrainfallmonthly():
 avgrainfallmonthly = giveavgrainfallmonthly()
 
 
+def giveavg(avgrainfallmonthly):
+	avgrainfallexpected = avgrainfallmonthly.groupby([avgrainfallmonthly.index.month, avgrainfallmonthly.index.day]).mean()
+	idx = pd.date_range(START, END)
+	data = [ (avgrainfallexpected[index.month][index.day]) for index in idx]
+	avgrainfallexpected = pd.Series(data, index=idx)
+	return avgrainfallexpected
 
-avgrainfallexpected = avgrainfallmonthly.groupby([avgrainfallmonthly.index.month, avgrainfallmonthly.index.day]).mean()
-idx = pd.date_range(START, END)
-data = [ (avgrainfallexpected[index.month][index.day]) for index in idx]
-avgrainfallexpected = pd.Series(data, index=idx)
+avgrainfallexpected = giveavg(avgrainfallmonthly)
+rainfallexpected = giveavg(rainfallmonthly)

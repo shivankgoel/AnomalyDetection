@@ -17,6 +17,7 @@ centre_info = pd.read_csv('data/original/centres.csv')
 dict_centreid_centrename = centre_info.groupby('centreid')['centrename'].apply(list).to_dict()
 dict_centreid_statecode = centre_info.groupby('centreid')['statecode'].apply(list).to_dict()
 dict_statecode_centreid = centre_info.groupby('statecode')['centreid'].apply(list).to_dict()
+dict_centrename_centreid = centre_info.groupby('centrename')['centreid'].apply(list).to_dict()
 
 state_info = pd.read_csv('data/original/states.csv')
 dict_statecode_statename = state_info.groupby('statecode')['state'].apply(list).to_dict() 
@@ -26,17 +27,21 @@ dict_statename_statecode = state_info.groupby('state')['statecode'].apply(list).
 START = CONSTANTS['STARTDATE']
 END = CONSTANTS['ENDDATE']
 
-WP = 7
-WA = 2
-wholeSalePA = pd.read_csv(CONSTANTS['ORIGINALMANDI'], header=None)
-wholeSalePA = wholeSalePA[wholeSalePA[WA] != 0]
-wholeSalePA = wholeSalePA[wholeSalePA[WP] != 0]
-wholeSalePA = wholeSalePA[np.isfinite(wholeSalePA[WA])]
-wholeSalePA = wholeSalePA[np.isfinite(wholeSalePA[WP])]
-wholeSalePA = wholeSalePA[wholeSalePA[0] >= START]
-wholeSalePA = wholeSalePA[wholeSalePA[0] <= END]
-wholeSalePA = wholeSalePA.drop_duplicates(subset=[0, 1], keep='last')
 
+def load_wholesale_data():
+  WP = 7
+  WA = 2
+  START = CONSTANTS['STARTDATE']
+  END = CONSTANTS['ENDDATE']
+  wholeSalePA = pd.read_csv(CONSTANTS['ORIGINALMANDI'], header=None)
+  wholeSalePA = wholeSalePA[wholeSalePA[WA] != 0]
+  wholeSalePA = wholeSalePA[wholeSalePA[WP] != 0]
+  wholeSalePA = wholeSalePA[np.isfinite(wholeSalePA[WA])]
+  wholeSalePA = wholeSalePA[np.isfinite(wholeSalePA[WP])]
+  wholeSalePA = wholeSalePA[wholeSalePA[0] >= START]
+  wholeSalePA = wholeSalePA[wholeSalePA[0] <= END]
+  wholeSalePA = wholeSalePA.drop_duplicates(subset=[0, 1], keep='last')
+  return wholeSalePA
 
 def CreateMandiSeries(Mandi, MandiPandas):
   mc = MandiPandas[MandiPandas[1] == Mandi]
@@ -48,10 +53,6 @@ def CreateMandiSeries(Mandi, MandiPandas):
   idx = pd.date_range(START, END)
   mc = mc.reindex(idx, fill_value=0)
   return mc
-
-start_date = '2006-01-01'
-end_date = '2015-06-23'
-
 
 
 def RemoveNaNFront(series):
@@ -72,134 +73,76 @@ from os import listdir
 imagenames = [f for f in listdir('plots/bigmandis10')]
 
 
-mandiseries = []
-for imagename in imagenames:
-  imagename = imagename.replace('.','_')
-  [statename,centrename,mandiname,_] = imagename.split('_')
+# WP = 7
+# WA = 2
+wholeSalePA = load_wholesale_data()
+def give_df_imagenames(isprice,imagenames):
+  mandiseries = []
+  for imagename in imagenames:
+    imagename = imagename.replace('.','_')
+    [statename,centrename,mandiname,_] = imagename.split('_')
+    mcode = dict_mandiname_mandicode[mandiname][0]
+    series = CreateMandiSeries(mcode,wholeSalePA)
+    if isprice:
+      ind = 7
+    else:
+      ind = 2
+    arrival = series[ind]   
+    arrival = arrival.replace(0.0, np.NaN, regex=True)
+    arrival = arrival.interpolate(method='pchip')
+    arrival = RemoveNaNFront(arrival)
+    mandiseries.append(arrival)
+
+  mandiDF = pd.DataFrame()
+  for i in range(0, len(mandiseries)):
+    mandiDF[i] = mandiseries[i]
+  return mandiDF
+
+
+def give_average_of_df(mandiDF):
+  meanseries = mandiDF.mean(axis=1)
+  meanseries = meanseries.replace(0.0, np.NaN, regex=True)
+  meanseries = meanseries.interpolate(method='pchip')
+  mandiarrivalseries = RemoveNaNFront(meanseries)
+  return mandiarrivalseries
+
+mandiDF = give_df_imagenames(False,imagenames)
+mandiarrivalseries = give_average_of_df(mandiDF)
+
+mandiDF = give_df_imagenames(True,imagenames)
+mandipriceseries = give_average_of_df(mandiDF)
+
+mandiDF = give_df_imagenames(False,['Delhi_DELHI_Azadpur.png'])
+specificarrivalseries = give_average_of_df(mandiDF)
+
+
+mandiDF = give_df_imagenames(True,['Delhi_DELHI_Azadpur.png'])
+specificpriceseries = give_average_of_df(mandiDF)
+
+
+
+def give_avg_series(mandiarrivalseries):
+  mandiarrivalexpected = mandiarrivalseries.rolling(window=30,center=True).mean()
+  mandiarrivalexpected = mandiarrivalexpected.groupby([mandiarrivalseries.index.month, mandiarrivalseries.index.day]).mean()
+  idx = pd.date_range(START, END)
+  data = [ (mandiarrivalexpected[index.month][index.day]) for index in idx]
+  expectedarrivalseries = pd.Series(data, index=idx)
+  return expectedarrivalseries
+
+expectedarrivalseries = give_avg_series(mandiarrivalseries)
+expectedmandiprice = give_avg_series(mandipriceseries)
+expectedspecificarrivalseries = give_avg_series(specificarrivalseries)
+
+
+def getmandi(mandiname,price):
+  if price:
+    switch = 7
+  else:
+    switch = 2 
   mcode = dict_mandiname_mandicode[mandiname][0]
   series = CreateMandiSeries(mcode,wholeSalePA)
-  arrival = series[2]   
+  arrival = series[switch]   
   arrival = arrival.replace(0.0, np.NaN, regex=True)
   arrival = arrival.interpolate(method='pchip')
   arrival = RemoveNaNFront(arrival)
-  mandiseries.append(arrival)
-  #arrival.to_csv('data/processed/mandi_arrival/'+str(mcode)+'.csv', header=None, encoding='utf-8')
-
-
-mandiDF = pd.DataFrame()
-for i in range(0, len(mandiseries)):
-  mandiDF[i] = mandiseries[i]
-
-meanseries = mandiDF.mean(axis=1)
-meanseries = meanseries.replace(0.0, np.NaN, regex=True)
-meanseries = meanseries.interpolate(method='pchip')
-mandiarrivalseries = RemoveNaNFront(meanseries)
-
-
-mandiseries = []
-for imagename in imagenames:
-  imagename = imagename.replace('.','_')
-  [statename,centrename,mandiname,_] = imagename.split('_')
-  mcode = dict_mandiname_mandicode[mandiname][0]
-  series = CreateMandiSeries(mcode,wholeSalePA)
-  arrival = series[7]   
-  arrival = arrival.replace(0.0, np.NaN, regex=True)
-  arrival = arrival.interpolate(method='pchip')
-  arrival = RemoveNaNFront(arrival)
-  mandiseries.append(arrival)
-  #arrival.to_csv('data/processed/mandi_price/'+str(mcode)+'.csv', header=None, encoding='utf-8')
-
-
-mandiDF = pd.DataFrame()
-for i in range(0, len(mandiseries)):
-  mandiDF[i] = mandiseries[i]
-
-meanseries = mandiDF.mean(axis=1)
-meanseries = meanseries.replace(0.0, np.NaN, regex=True)
-meanseries = meanseries.interpolate(method='pchip')
-mandipriceseries = RemoveNaNFront(meanseries)
-
-
-
-'''
-For PimpalGaon
-'''
-
-imagenames = ['Delhi_DELHI_Azadpur.png']
-
-
-mandiseries = []
-for imagename in imagenames:
-  imagename = imagename.replace('.','_')
-  [statename,centrename,mandiname,_] = imagename.split('_')
-  mcode = dict_mandiname_mandicode[mandiname][0]
-  series = CreateMandiSeries(mcode,wholeSalePA)
-  arrival = series[2]   
-  arrival = arrival.replace(0.0, np.NaN, regex=True)
-  arrival = arrival.interpolate(method='pchip')
-  arrival = RemoveNaNFront(arrival)
-  mandiseries.append(arrival)
-  #arrival.to_csv('data/processed/mandi_arrival/'+str(mcode)+'.csv', header=None, encoding='utf-8')
-
-
-mandiDF = pd.DataFrame()
-for i in range(0, len(mandiseries)):
-  mandiDF[i] = mandiseries[i]
-
-meanseries = mandiDF.mean(axis=1)
-meanseries = meanseries.replace(0.0, np.NaN, regex=True)
-meanseries = meanseries.interpolate(method='pchip')
-specificarrivalseries = RemoveNaNFront(meanseries)
-
-
-mandiseries = []
-for imagename in imagenames:
-  imagename = imagename.replace('.','_')
-  [statename,centrename,mandiname,_] = imagename.split('_')
-  mcode = dict_mandiname_mandicode[mandiname][0]
-  series = CreateMandiSeries(mcode,wholeSalePA)
-  arrival = series[7]   
-  arrival = arrival.replace(0.0, np.NaN, regex=True)
-  arrival = arrival.interpolate(method='pchip')
-  arrival = RemoveNaNFront(arrival)
-  mandiseries.append(arrival)
-  #arrival.to_csv('data/processed/mandi_price/'+str(mcode)+'.csv', header=None, encoding='utf-8')
-
-
-mandiDF = pd.DataFrame()
-for i in range(0, len(mandiseries)):
-  mandiDF[i] = mandiseries[i]
-
-meanseries = mandiDF.mean(axis=1)
-meanseries = meanseries.replace(0.0, np.NaN, regex=True)
-meanseries = meanseries.interpolate(method='pchip')
-specificpriceseries = RemoveNaNFront(meanseries)
-
-
-
-mandiarrivalexpected = mandiarrivalseries.rolling(window=30,center=True).mean()
-mandiarrivalexpected = mandiarrivalexpected.groupby([mandiarrivalseries.index.month, mandiarrivalseries.index.day]).mean()
-idx = pd.date_range(START, END)
-data = [ (mandiarrivalexpected[index.month][index.day]) for index in idx]
-expectedarrivalseries = pd.Series(data, index=idx)
-
-mandipriceexpected = mandipriceseries.rolling(window=30,center=True).mean()
-mandipriceexpected = mandipriceexpected.groupby([mandipriceexpected.index.month, mandipriceexpected.index.day]).mean()
-idx = pd.date_range(START, END)
-data = [ (mandipriceexpected[index.month][index.day]) for index in idx]
-expectedmandiprice = pd.Series(data, index=idx)
-
-
-mandiarrivalexpected = specificarrivalseries.rolling(window=30,center=True).mean()
-mandiarrivalexpected = mandiarrivalexpected.groupby([mandiarrivalseries.index.month, mandiarrivalseries.index.day]).mean()
-idx = pd.date_range(START, END)
-data = [ (mandiarrivalexpected[index.month][index.day]) for index in idx]
-expectedspecificarrivalseries = pd.Series(data, index=idx)
-
-
-'''
-from averagemandi import mandiarrivalexpected
-import matplotlib.pyplot as plt
-mandiarrivalexpected.plot()
-plt.show()
-'''
+  return arrival

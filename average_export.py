@@ -22,3 +22,13 @@ def getexportseries():
 
 
 exportseries = getexportseries()
+
+
+def giveavg(avgrainfallmonthly):
+	avgrainfallexpected = avgrainfallmonthly.groupby([avgrainfallmonthly.index.month, avgrainfallmonthly.index.day]).mean()
+	idx = pd.date_range(START, END)
+	data = [ (avgrainfallexpected[index.month][index.day]) for index in idx]
+	avgrainfallexpected = pd.Series(data, index=idx)
+	return avgrainfallexpected
+
+expectedexportseries = giveavg(exportseries)

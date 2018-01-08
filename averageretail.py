@@ -1,3 +1,4 @@
+
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -34,21 +35,54 @@ for state in top_10_states:
   relevant_centres_id = relevant_centres_id + centreids
 
 
-retailP = pd.read_csv(CONSTANTS['ORIGINALRETAIL'], header=None)
 
 RP = 2
 START = CONSTANTS['STARTDATE']
 END = CONSTANTS['ENDDATE']
 CENTREID = 1
 
-retailP = retailP[retailP[RP] != 0]
-retailP = retailP[np.isfinite(retailP[RP])]
-retailP = retailP[retailP[0] >= START]
-retailP = retailP[retailP[0] <= END]
-retailP = retailP.drop_duplicates(subset=[0, 1], keep='last')
+
+def rwhiten(series):
+  '''
+  Whitening Function
+  Formula is
+    W[x x.T] = E(D^(-1/2))E.T
+  Here x: is the observed series
+  Read here more:
+  https://www.cs.helsinki.fi/u/ahyvarin/papers/NN00new.pdf
+  '''
+  EigenValues, EigenVectors = np.linalg.eig(series.cov())
+  D = [[0.0 for i in range(0, len(EigenValues))] for j in range(0, len(EigenValues))]
+  for i in range(0, len(EigenValues)):
+    D[i][i] = EigenValues[i]
+  DInverse = np.linalg.matrix_power(D, -1)
+  DInverseSqRoot = scipy.linalg.sqrtm(D)
+  V = np.dot(np.dot(EigenVectors, DInverseSqRoot), EigenVectors.T)
+  series = series.apply(lambda row: np.dot(V, row.T).T, axis=1)
+  return series
+
+
+def load_retail_data():
+  RP = 2
+  START = CONSTANTS['STARTDATE']
+  END = CONSTANTS['ENDDATE']
+  CENTREID = 1
+  retailP = pd.read_csv(CONSTANTS['ORIGINALRETAIL'], header=None)
+  retailP = retailP[retailP[RP] != 0]
+  retailP = retailP[np.isfinite(retailP[RP])]
+  retailP = retailP[retailP[0] >= START]
+  retailP = retailP[retailP[0] <= END]
+  retailP = retailP.drop_duplicates(subset=[0, 1], keep='last')
+  retailP = retailP[retailP[0] >= START]
+  retailP = retailP[retailP[0] <= END]
+  return retailP
+
+retailP = load_retail_data()
 
 def CreateCentreSeries(Centre, RetailPandas):
+  global mytemp
   rc = RetailPandas[RetailPandas[1] == Centre]
+  rc.groupby(0, group_keys=False).mean()
   rc = rc.sort_values([0], ascending=[True])
   rc[3] = rc.apply(lambda row: datetime.strptime(row[0], '%Y-%m-%d'), axis=1)
   rc.drop(rc.columns[[0, 1]], axis=1, inplace=True)
@@ -56,13 +90,9 @@ def CreateCentreSeries(Centre, RetailPandas):
   rc.index.names = [None]
   idx = pd.date_range(START, END)
   rc = rc.reindex(idx, fill_value=0)
+  mytemp = rc
   return rc * 100
 
-retailP = retailP[retailP[0] >= START]
-retailP = retailP[retailP[0] <= END]
-
-start_date = '2006-01-01'
-end_date = '2015-06-23'
 
 
 def RemoveNaNFront(series):
@@ -94,70 +124,63 @@ from os import listdir
 imagenames = [f for f in listdir('plots/bigmandis10')]
 
 
-centreSeries = []
-for imagename in imagenames:
-  imagename = imagename.replace('.','_')
-  [statename,centrename,mandiname,_] = imagename.split('_')
-  code = dict_centrename_centreid[centrename][0]
-  series = CreateCentreSeries(code,retailP)
-  price = series[RP]   
-  price = price.replace(0.0, np.NaN, regex=True)
-  price = price.interpolate(method='pchip')
-  price = RemoveNaNFront(price)
-  centreSeries.append(price)
+def give_df_imagenames_center(imagenames):
+  centreSeries = []
+  RP=2
+  for imagename in imagenames:
+    if len(imagename.split('_'))>1:
+      imagename = imagename.replace('.','_')
+      print imagename
+      [statename,centrename,mandiname,_] = imagename.split('_')
+      code = dict_centrename_centreid[centrename][0]
+      series = CreateCentreSeries(code,retailP)
+      price = series[RP]   
+      price = price.replace(0.0, np.NaN, regex=True)
+      price = price.interpolate(method='pchip')
+      price = RemoveNaNFront(price)
+      centreSeries.append(price)
+
+  centreDF = pd.DataFrame()
+  for i in range(0, len(centreSeries)):
+    centreDF[i] = centreSeries[i]
   
+  return centreDF
 
-centreDF = pd.DataFrame()
-for i in range(0, len(centreSeries)):
-  centreDF[i] = centreSeries[i]
 
-'''
-Mean of all centres in given 10 states.
-'''
-meanseries = centreDF.mean(axis=1)
-meanseries = meanseries.replace(0.0, np.NaN, regex=True)
-meanseries = meanseries.interpolate(method='pchip')
-retailpriceseries = RemoveNaNFront(meanseries)
+def give_average_of_df(mandiDF):
+  meanseries = mandiDF.mean(axis=1)
+  meanseries = meanseries.replace(0.0, np.NaN, regex=True)
+  meanseries = meanseries.interpolate(method='pchip',)
+  mandiarrivalseries = RemoveNaNFront(meanseries)
+  return mandiarrivalseries
 
 
 
+centreDF = give_df_imagenames_center(imagenames)
+retailpriceseries = give_average_of_df(centreDF)
 
-'''
-For MUMBAI
-'''
+centreDF1 = give_df_imagenames_center(['dummy_MUMBAI_dummy.png'])
+specificretailprice = give_average_of_df(centreDF1)
 
-
-imagenames = ['Maharashtra_MUMBAI_Lasalgaon.png']
-
-
-centreSeries = []
-for imagename in imagenames:
-  imagename = imagename.replace('.','_')
-  [statename,centrename,mandiname,_] = imagename.split('_')
-  code = dict_centrename_centreid[centrename][0]
-  series = CreateCentreSeries(code,retailP)
-  price = series[RP]   
-  price = price.replace(0.0, np.NaN, regex=True)
-  price = price.interpolate(method='pchip')
-  price = RemoveNaNFront(price)
-  centreSeries.append(price)
-  
-
-centreDF = pd.DataFrame()
-for i in range(0, len(centreSeries)):
-  centreDF[i] = centreSeries[i]
-
-'''
-Mean of all centres in given 10 states.
-'''
-meanseries = centreDF.mean(axis=1)
-meanseries = meanseries.replace(0.0, np.NaN, regex=True)
-meanseries = meanseries.interpolate(method='pchip')
-specificretailprice = RemoveNaNFront(meanseries)
-
+centreDFwhite = rwhiten(give_df_imagenames_center(['dummy_MUMBAI_dummy.png','dummy_MUMBAI_dummy.png']))
+retailpriceserieswhiten = give_average_of_df(centreDFwhite)
 
 retailpriceexpected = retailpriceseries.rolling(window=30,center=True).mean()
 retailpriceexpected = retailpriceexpected.groupby([retailpriceexpected.index.month, retailpriceexpected.index.day]).mean()
 idx = pd.date_range(START, END)
 data = [ (retailpriceexpected[index.month][index.day]) for index in idx]
 expectedretailprice = pd.Series(data, index=idx)
+
+
+
+
+def getcenter(centrename):
+  code = dict_centrename_centreid[centrename][0]
+  series = CreateCentreSeries(code,retailP)
+  price = series[RP]   
+  price = price.replace(0.0, np.NaN, regex=True)
+  price = price.interpolate(method='pchip')
+  price = RemoveNaNFront(price)
+  centreSeries.append(price)
+  return specificretailprice
+

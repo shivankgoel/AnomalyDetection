@@ -25,3 +25,20 @@ def getfuelseries():
 
 
 fuelpricedelhi,fuelpricemumbai = getfuelseries()
+
+
+def RemoveNaNFront(series):
+  index = 0
+  while True:
+    if(not np.isfinite(series[index])):
+      index += 1
+    else:
+      break
+  if(index < len(series)):
+    for i in range(0, index):
+      series[i] = series[index]
+  return series
+
+
+fuelpricemumbai = RemoveNaNFront(fuelpricemumbai)
+fuelpricedelhi = RemoveNaNFront(fuelpricedelhi)

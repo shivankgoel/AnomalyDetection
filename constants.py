@@ -10,9 +10,9 @@ CONSTANTS =  {'ORIGINALMANDI' : 'data/original/wholesaleoniondata.csv',
               'MANDIPRICES'   : 'data/timeseries/mandiPrices.csv',
               'MANDIARRIVALS' : 'data/timeseries/mandiArrivals.csv',
               'RETAILPRICES'  : 'data/timeseries/centresPrices.csv',
-              'MANDIPRICES_WHITENED'   : 'data/whitened/mandiPrices.csv',
-              'MANDIARRIVALS_WHITENED' : 'data/whitened/mandiArrivals.csv',
-              'RETAILPRICES_WHITENED'  : 'data/whitened/centresPrices.csv',
+              'MANDIPRICES_WHITENED'   : 'data/riteshwhitened/mandiPrices.csv',
+              'MANDIARRIVALS_WHITENED' : 'data/riteshwhitened/mandiArrivals.csv',
+              'RETAILPRICES_WHITENED'  : 'data/riteshwhitened/centresPrices.csv',
               'MANDIPRICES_UNEXTRAPOLATED'   : 'data/unextrapolated/mandiPrices.csv',
               'MANDIARRIVALS_UNEXTRAPOLATED' : 'data/unextrapolated/mandiArrivals.csv',
               'RETAILPRICES_UNEXTRAPOLATED'  : 'data/unextrapolated/centresPrices.csv',
@@ -24,4 +24,6 @@ CONSTANTS =  {'ORIGINALMANDI' : 'data/original/wholesaleoniondata.csv',
               'DAYS'          : 3461,
               'ANOMALYNAMES' : ['Hoarding','Inflation','Weather','Fuel','Transport'],
               'STARTDATE'     : '2006-01-01',
-              'ENDDATE'       : '2015-06-23'}
+              #'ENDDATE'       : '2015-06-23'
+              'ENDDATE'       : '2017-11-30'
+              }
