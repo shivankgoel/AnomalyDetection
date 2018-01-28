@@ -25,7 +25,7 @@ dict_statename_statecode = state_info.groupby('state')['statecode'].apply(list).
 
 
 START = CONSTANTS['STARTDATE']
-END = CONSTANTS['ENDDATE']
+END = CONSTANTS['ENDDATEOLD']
 
 
 def load_wholesale_data():
@@ -143,6 +143,7 @@ def getmandi(mandiname,price):
   series = CreateMandiSeries(mcode,wholeSalePA)
   arrival = series[switch]   
   arrival = arrival.replace(0.0, np.NaN, regex=True)
+  #arrival = arrival.interpolate(method='pchip',limit_direction='both')
   arrival = arrival.interpolate(method='pchip')
   arrival = RemoveNaNFront(arrival)
   return arrival

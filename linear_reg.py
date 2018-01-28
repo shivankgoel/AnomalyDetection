@@ -11,6 +11,7 @@ from averagemandi import mandipriceseries
 from averagemandi import mandiarrivalseries
 from averagemandi import expectedarrivalseries
 from averagemandi import expectedmandiprice
+from averageretail import retailpriceseries
 
 mp = mandipriceseries
 rp = retailpriceseries

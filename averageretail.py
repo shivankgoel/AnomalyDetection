@@ -38,7 +38,7 @@ for state in top_10_states:
 
 RP = 2
 START = CONSTANTS['STARTDATE']
-END = CONSTANTS['ENDDATE']
+END = CONSTANTS['ENDDATEOLD']
 CENTREID = 1
 
 
@@ -80,7 +80,6 @@ def load_retail_data():
 retailP = load_retail_data()
 
 def CreateCentreSeries(Centre, RetailPandas):
-  global mytemp
   rc = RetailPandas[RetailPandas[1] == Centre]
   rc.groupby(0, group_keys=False).mean()
   rc = rc.sort_values([0], ascending=[True])
@@ -90,7 +89,6 @@ def CreateCentreSeries(Centre, RetailPandas):
   rc.index.names = [None]
   idx = pd.date_range(START, END)
   rc = rc.reindex(idx, fill_value=0)
-  mytemp = rc
   return rc * 100
 
 
@@ -162,8 +160,8 @@ retailpriceseries = give_average_of_df(centreDF)
 centreDF1 = give_df_imagenames_center(['dummy_MUMBAI_dummy.png'])
 specificretailprice = give_average_of_df(centreDF1)
 
-centreDFwhite = rwhiten(give_df_imagenames_center(['dummy_MUMBAI_dummy.png','dummy_MUMBAI_dummy.png']))
-retailpriceserieswhiten = give_average_of_df(centreDFwhite)
+# centreDFwhite = rwhiten(give_df_imagenames_center(['dummy_MUMBAI_dummy.png','dummy_MUMBAI_dummy.png']))
+# retailpriceserieswhiten = give_average_of_df(centreDFwhite)
 
 retailpriceexpected = retailpriceseries.rolling(window=30,center=True).mean()
 retailpriceexpected = retailpriceexpected.groupby([retailpriceexpected.index.month, retailpriceexpected.index.day]).mean()
@@ -179,8 +177,8 @@ def getcenter(centrename):
   series = CreateCentreSeries(code,retailP)
   price = series[RP]   
   price = price.replace(0.0, np.NaN, regex=True)
+  #price = price.interpolate(method='pchip',limit_direction='both')
   price = price.interpolate(method='pchip')
   price = RemoveNaNFront(price)
-  centreSeries.append(price)
-  return specificretailprice
+  return price
 

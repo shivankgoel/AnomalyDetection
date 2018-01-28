@@ -5,6 +5,8 @@ from constants import CONSTANTS
 import matplotlib.pyplot as plt
 import matplotlib
 
+import os
+cwd = os.getcwd()
 anomalies = pd.read_csv(CONSTANTS['ANOMALIES_NEWSPAPER'], header=None, index_col=None)
 anomalies[0] = [ datetime.strftime(datetime.strptime(date, '%d/%m/%Y'),'%Y-%m-%d') for date in anomalies[0]]
 anomalies[1] = [ datetime.strftime(datetime.strptime(date, ' %d/%m/%Y'),'%Y-%m-%d') for date in anomalies[1]]
@@ -30,7 +32,7 @@ d = {'retailp':retailpriceseries ,
 	}
 
 xdf = pd.DataFrame(data=d)
-for i in range(1,31):
+for i in range(1,30):
 	xdf['retailp'+str(i)] = retailpriceseries.shift(i)
 	xdf['mandip'+str(i)] = mandipriceseries.shift(i)
 	xdf['mandiarr'+str(i)] = mandiarrivalseries.shift(i)
@@ -39,6 +41,14 @@ for i in range(1,31):
 	xdf['fuel'+str(i)] = fuelpricemumbai.shift(i)
 	xdf['cpi'+str(i)] = cpimonthlyseries.shift(i)
 	xdf['oil'+str(i)] = oilmonthlyseries.shift(i)
+	# xdf['retailp'+str(-i)] = retailpriceseries.shift(-i)
+	# xdf['mandip'+str(-i)] = mandipriceseries.shift(-i)
+	# xdf['mandiarr'+str(-i)] = mandiarrivalseries.shift(-i)
+	# xdf['export'+str(-i)] = exportseries.shift(-i)
+	# xdf['rainfall'+str(-i)] = rainfallmonthly.shift(-i)
+	# xdf['fuel'+str(-i)] = fuelpricemumbai.shift(-i)
+	# xdf['cpi'+str(-i)] = cpimonthlyseries.shift(-i)
+	# xdf['oil'+str(-i)] = oilmonthlyseries.shift(-i)
 
 def give_anomaly_labels(category):
 	seriesanomaly = pd.Series(index=mandipriceseries.index)
@@ -85,14 +95,26 @@ train,train_labels = shuffle(train,train_labels,random_state=0)
 test,test_labels = shuffle(test,test_labels,random_state=0)
 
 from sklearn.decomposition import PCA
-pca = PCA(n_components=10, whiten=True)
+pca = PCA(n_components=8, whiten=True)
 pca.fit(train)
 train = pca.transform(train)
 test = pca.transform(test)
 
 
-model = RandomForestClassifier(max_depth=None, random_state=None)
-#model = SVC()
+#model = RandomForestClassifier(max_depth=None, random_state=0)
+# from sklearn.linear_model import LogisticRegression
+from sklearn.naive_bayes import GaussianNB
+#from sklearn.ensemble import RandomForestClassifier, VotingClassifier
+# clf1 = LogisticRegression(random_state=0)
+# clf2 = RandomForestClassifier(random_state=0)
+#model = GaussianNB()
+# clf4 = SVC()
+#model = VotingClassifier(estimators=[('lr', clf1), ('rf', clf2), ('gnb', clf3),('svc', clf4)], voting='hard')
+model = SVC()
+from sklearn import svm, grid_search
+# parameters = {'kernel':('linear', 'rbf'), 'C':[1, 10]}
+# model = svm.SVC()
+# model = grid_search.GridSearchCV(svr, parameters)
 model.fit(train,train_labels)
 test_pred = model.predict(test)
 train_pred = model.predict(train)

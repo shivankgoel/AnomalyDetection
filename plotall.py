@@ -11,7 +11,7 @@ import matplotlib.dates as mdates
 
 font = {'family' : 'normal',
         #'weight' : 'bold',
-        'size'   : 21}
+        'size'   : 15}
 
 matplotlib.rc('font', **font)
 
@@ -28,7 +28,7 @@ def plot_series(inpseries,lbl,clr):
   inpseries = inpseries[s:e]
   yaxis = list(inpseries)
   xaxis = list(inpseries.index)
-  plt.plot(xaxis,yaxis, color =colors[clr] , label=lbl, linewidth=2.0)
+  plt.plot(xaxis,yaxis, color =colors[clr] , label=lbl, linewidth=1.5)
 
 
 def plot_series_axis(inpseries,lbl,clr,ax):
@@ -41,7 +41,7 @@ def plot_series_axis(inpseries,lbl,clr,ax):
   inpseries = inpseries[s:e]
   yaxis = list(inpseries)
   xaxis = list(inpseries.index)
-  ax.plot(xaxis,yaxis, color =colors[clr] , label=lbl, linewidth=2.0)
+  ax.plot(xaxis,yaxis, color =colors[clr] , label=lbl, linewidth=1.5)
 
   
 
@@ -363,7 +363,7 @@ def plotretailvsmandi(start,end,averagetoo,roll):
   plt.legend(loc='best')
   plt.show()
 
-def plotsingleseries(series,title,xlabel,ylabel,start,end,averagetoo,roll):
+def plotsingleseries(series,title,xlabel,ylabel,start,end,averagetoo,roll,sigma=2):
   a = series[start:end]
   if(averagetoo):
     b = give_average_series(start,end,series)
@@ -379,7 +379,51 @@ def plotsingleseries(series,title,xlabel,ylabel,start,end,averagetoo,roll):
     plot_series(b,'Average '+title,4)
     ma = b.rolling(30,center=True).mean()
     mstd = b.rolling(30,center=True).std()
-    plt.fill_between(mstd.index, ma-2*mstd, ma+2*mstd, color=colors[4], alpha=0.2)
+    plt.fill_between(mstd.index, ma-sigma*mstd, ma+sigma*mstd, color=colors[4], alpha=0.2)
+  plt.legend(loc='best')
+  plt.show()
+
+def plottwosingleseries(series1,series2,title,xlabel,ylabel,start,end,averagetoo,roll,sigma=2):
+  a = series1[start:end]
+  b = series2[start:end]
+  if(averagetoo):
+    b = give_average_series(start,end,series)
+  if roll:
+    a = a.rolling(window=14,center=True).mean()
+    if(averagetoo):
+      b = b.rolling(window=14,center=True).mean()
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+  plot_series(a,title,6)
+  plot_series(b,title,3)
+  if(averagetoo):
+    plot_series(b,'Average '+title,4)
+    ma = b.rolling(30,center=True).mean()
+    mstd = b.rolling(30,center=True).std()
+    plt.fill_between(mstd.index, ma-sigma*mstd, ma+sigma*mstd, color=colors[4], alpha=0.2)
+  plt.legend(loc='best')
+  plt.show()
+
+def plotsingleseriesylimit(series,title,xlabel,ylabel,ymin,ymax,start,end,averagetoo,roll,sigma=2):
+  a = series[start:end]
+  if(averagetoo):
+    b = give_average_series(start,end,series)
+  if roll:
+    a = a.rolling(window=14,center=True).mean()
+    if(averagetoo):
+      b = b.rolling(window=14,center=True).mean()
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+  axes = plt.gca()
+  axes.set_ylim([ymin,ymax])
+  plot_series(a,title,6)
+  if(averagetoo):
+    plot_series(b,'Average '+title,4)
+    ma = b.rolling(30,center=True).mean()
+    mstd = b.rolling(30,center=True).std()
+    plt.fill_between(mstd.index, ma-sigma*mstd, ma+sigma*mstd, color=colors[4], alpha=0.2)
   plt.legend(loc='best')
   plt.show()
 
@@ -397,15 +441,15 @@ def plotdoubleseries(s1,s2,x1,x2,y1,y2,start,end,avg1=False,avg2=False,roll1=Fal
     s2 = s2.rolling(window=14,center=True).mean()
   plot_series_axis(s1,y1,6,ax1)
   plot_series_axis(s2,y2,3,ax2)
-  if avg2:
-    a = give_average_series(s2)
-    plot_series(a,'Average '+y1,4)
+  if avg1:
+    a = give_average_series(s1)
+    plot_series_axis(a,'Average '+y1,4,1)
     ma1 = a.rolling(30,center=True).mean()
     mstd1 = a.rolling(30,center=True).std()
     ax1.fill_between(mstd1.index, ma1-2*mstd1, ma1+2*mstd1, color=colors[6], alpha=0.1)
   if avg2:
     b = give_average_series(s2)
-    plot_series(b,'Average '+y2,4)
+    plot_series_axis(b,'Average '+y2,4,2)
     ma2 = b.rolling(30,center=True).mean()
     mstd2 = b.rolling(30,center=True).std()
     ax2.fill_between(mstd2.index, ma2-2*mstd2, ma2+2*mstd2, color=colors[3], alpha=0.1)
@@ -430,8 +474,8 @@ def linear_reg(x,y):
   predicted_labels = regr.predict(test.values.reshape(-1,1))
   print('Variance score: %.2f' % r2_score(test_labels, predicted_labels ))
   print("Mean squared error: %.2f" % mean_squared_error(test_labels, predicted_labels))
-  plt.plot(test, test_labels, color='blue', linewidth=3)
-  plt.plot(test, predicted_labels, color='red', linewidth=3)
+  plt.plot(test, test_labels, color='blue', linewidth=2)
+  plt.plot(test, predicted_labels, color='red', linewidth=2)
   plt.show()
 
 
@@ -443,10 +487,13 @@ weather only: '01-06-2007','31-12-2007'
 '''
 
 
-pstart = '2006-03-01'
-pend = '2007-03-01'
+# pstart = '2006-03-01'
+# pend = '2007-03-01'
 fstart = CONSTANTS['STARTDATE']
-fend = CONSTANTS['ENDDATE']
+fend = CONSTANTS['ENDDATEOLD']
+
+pstart = '2016-04-01'
+pend = '2017-02-01'
 
 # plotweather(pstart,pend,True,False)
 # plotarrival(pstart,pend,True,True)
@@ -457,4 +504,11 @@ fend = CONSTANTS['ENDDATE']
 # plotsingleseries(exportseries,'Export','Time','Export in Metric Tons',pstart,pend,False,True)
 # plotcpi(fstart,fend,False,False)
 # plotdoubleseries(mandipriceseries,cpimonthlyseries,'Time','Time','Mandi Price','CPI',fstart,fend)
-linear_reg(cpimonthlyseries,mandipriceseries)
+# linear_reg(cpimonthlyseries,mandipriceseries)
+
+from loadmonthlyseries import mpimonthlyseries
+from loadmonthlyseries import mpionionmonthlyseries
+from loadmonthlyseries import cpimonthlyseries 
+
+plotdoubleseries(cpimonthlyseries,mpimonthlyseries,'Time','Time','CPI','WPI',fstart,fend)
+plottwosingleseries(cpimonthlyseries,mpionionmonthlyseries,'','Time','',fstart,fend,False,True )
